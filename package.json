@@ -9,6 +9,6 @@
   "author": "Alain Di Chiappari",
   "license": "ISC",
   "dependencies": {
-    "xml-reader": "^2.4.3"
+    "fast-xml-parser": "^4.3.4"
   }
 }
