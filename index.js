@@ -18,21 +18,24 @@ function getJsonThreads() {
   let json = parser.parse(input);
 
   for (const sms of json.smses.sms) {
-    if (!threads[sms["@_address"]]) {
-      threads[sms["@_address"]] = {
+    // Remove +39 prefix
+    const phoneNumber = sms["@_address"].replace("+39", "");
+
+    if (!threads[phoneNumber]) {
+      threads[phoneNumber] = {
         from: sms["@_contact_name"],
         messages: [],
       };
     }
 
     // Generate unique hash
-    const hash = `${sms["@_address"]}-${sms["@_body"]}`;
+    const hash = `${phoneNumber}-${sms["@_body"]}`;
     if (set.has(hash)) {
       continue;
     }
     set.add(hash);
 
-    threads[sms["@_address"]].messages.push({
+    threads[phoneNumber].messages.push({
       date: sms["@_readable_date"],
       body: sms["@_body"],
     });
