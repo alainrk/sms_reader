@@ -1,0 +1,14 @@
+{
+  "name": "sms_reader",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Alain Di Chiappari",
+  "license": "ISC",
+  "dependencies": {
+    "xml-reader": "^2.4.3"
+  }
+}
