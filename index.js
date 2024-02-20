@@ -58,6 +58,7 @@ function getJsonThreads() {
 
     if (!threads[phoneNumber]) {
       threads[phoneNumber] = {
+        number: phoneNumber,
         from: sms["@_contact_name"],
         messages: [],
       };
@@ -87,8 +88,14 @@ function getJsonThreads() {
     });
   }
 
-  // console.log(JSON.stringify(threads, null, 2));
-  return threads;
+  threadsArray = Object.values(threads);
+
+  // Sort threads by name
+  threadsArray.sort((a, b) => {
+    return a.from.localeCompare(b.from);
+  });
+
+  return threadsArray;
 }
 
 function generateWebpage(threads) {
@@ -133,16 +140,19 @@ function generateWebpage(threads) {
 
   // Loop through phone numbers
   let id = 1;
-  Object.keys(threads).forEach((phoneNumber) => {
-    const contactName = threads[phoneNumber].from;
-    const messages = threads[phoneNumber].messages;
+  threads.forEach((thread) => {
+    const phoneNumber = thread.number;
+    const contactName = thread.from;
+    const messages = thread.messages;
 
     let header = `${contactName} (${phoneNumber})`;
     if (contactName === "(Unknown)") {
       header = phoneNumber;
     }
 
-    htmlContent += `<button class="collapsible-button" onclick="toggleCollapsible('content${id}')">${header}</button>`;
+    htmlContent += `<button class="collapsible-button" onclick="toggleCollapsible('content${id}')">
+      ${header}    [${messages.length}]
+    </button>`;
     htmlContent += `<div class="collapsible-content" id="content${id}">`;
     id++;
 
