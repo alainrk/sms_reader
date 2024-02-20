@@ -166,7 +166,7 @@ function generateWebpage(threads) {
         htmlContent += `<h4>${message.day}</h4>`;
         lastDay = message.day;
       }
-      const user = message.type === "sent" ? "Alain" : contactName;
+      const user = message.type === "sent" ? "Me" : contactName;
       htmlContent += `<li>[${user} - ${message.time}]: ${message.body}</li>\n`;
     });
 
