@@ -2,13 +2,33 @@
 const { XMLParser } = require("fast-xml-parser");
 const fs = require("fs");
 const { join } = require("path");
+const dayjs = require("dayjs");
+
+function getTimestamp(date) {
+  const customParseFormat = require("dayjs/plugin/customParseFormat");
+  dayjs.extend(customParseFormat);
+  dayjs.locale({
+    name: "it",
+    weekdays: "Domenica_Lunedì_Martedì_Mercoledì_Giovedì_Venerdì_Sabato".split(
+      "_"
+    ),
+    months: "gen_feb_mar_apr_mag_giu_lug_ago_set_ott_nov_dic".split("_"),
+  });
+
+  const parsedDate = dayjs(date, "DD/MMM/YYYY HH:mm:ss", "it");
+
+  // Convert to timestamp
+  const timestamp = parsedDate.unix();
+  return timestamp;
+}
 
 function getJsonThreads() {
   // Read the XML file
-  const input = fs.readFileSync(join("input", "input.xml"), "utf8");
-
+  const input = fs.readFileSync(
+    join("..", "..", "Desktop", "input", "all.xml"),
+    "utf8"
+  );
   const set = new Set();
-
   const threads = {};
 
   // Read the XML file
@@ -21,6 +41,8 @@ function getJsonThreads() {
     // Remove +39 prefix
     const phoneNumber = sms["@_address"].replace("+39", "");
 
+    // Get timestamp from format 09/gen/2013 00:16:14
+
     if (!threads[phoneNumber]) {
       threads[phoneNumber] = {
         from: sms["@_contact_name"],
@@ -28,7 +50,7 @@ function getJsonThreads() {
       };
     }
 
-    // Generate unique hash
+    // Generate unique hash and avoid duplicates
     const hash = `${phoneNumber}-${sms["@_body"]}`;
     if (set.has(hash)) {
       continue;
@@ -36,8 +58,17 @@ function getJsonThreads() {
     set.add(hash);
 
     threads[phoneNumber].messages.push({
+      type: sms["@_type"] === "1" ? "received" : "sent",
+      timestamp: getTimestamp(sms["@_readable_date"]),
       date: sms["@_readable_date"],
       body: sms["@_body"],
+    });
+  }
+
+  // Sort messages by date
+  for (const phoneNumber in threads) {
+    threads[phoneNumber].messages.sort((a, b) => {
+      return new Date(a.timestamp) - new Date(b.timestamp);
     });
   }
 
@@ -60,7 +91,8 @@ function generateWebpage(threads) {
 
     // Add messages for each phone number
     messages.forEach((message) => {
-      htmlContent += `<li>${message.date} - ${message.body}</li>\n`;
+      const user = message.type === "sent" ? "Alain" : contactName;
+      htmlContent += `<li>[${message.date} || ${user}]: ${message.body}</li>\n`;
     });
 
     htmlContent += "</ul>\n</li>\n";
