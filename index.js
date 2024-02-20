@@ -19,7 +19,20 @@ function getTimestamp(date) {
 
   // Convert to timestamp
   const timestamp = parsedDate.unix();
-  return timestamp;
+  const [day, time] = parsedDate.format("DD/MM/YYYY HH:mm").split(" ");
+  const dayMonth = parsedDate.format("DD/MM");
+  const dayTime = parsedDate.format("DD HH:mm");
+  const month = parsedDate.format("MMM");
+  const monthYear = parsedDate.format("MMM/YYYY");
+  return {
+    day,
+    time,
+    dayMonth,
+    dayTime,
+    month,
+    monthYear,
+    timestamp,
+  };
 }
 
 function getJsonThreads() {
@@ -57,11 +70,13 @@ function getJsonThreads() {
     }
     set.add(hash);
 
+    const times = getTimestamp(sms["@_readable_date"]);
+
     threads[phoneNumber].messages.push({
       type: sms["@_type"] === "1" ? "received" : "sent",
-      timestamp: getTimestamp(sms["@_readable_date"]),
       date: sms["@_readable_date"],
       body: sms["@_body"],
+      ...times,
     });
   }
 
@@ -78,28 +93,94 @@ function getJsonThreads() {
 
 function generateWebpage(threads) {
   // Create HTML content
-  let htmlContent =
-    "<!DOCTYPE html>\n<html>\n<head>\n<title>Message Threads</title>\n</head>\n<body>\n<h1>Message Threads</h1>\n<ul>\n";
+  let htmlContent = `
+  <!DOCTYPE html>
+  <html>
+  <head>
+  <title>Message Threads</title>
+  <style>
+    /* Style for the collapsible content */
+    .collapsible-content {
+      display: none;
+      padding: 10px;
+      background-color: #f1f1f1;
+      border: 1px solid #ddd;
+      margin-top: 5px;
+    }
+
+    /* Style for the collapsible button */
+    .collapsible-button {
+      background-color: #3498db;
+      color: white;
+      cursor: pointer;
+      padding: 10px;
+      width: 100%;
+      border: none;
+      text-align: left;
+      outline: none;
+    }
+
+    /* Change color of button on hover */
+    .collapsible-button:hover {
+      background-color: #2980b9;
+    }
+  </style>
+  </head>
+  <body>
+  <h1>Message Threads</h1>
+  <ul>
+  `;
 
   // Loop through phone numbers
+  let id = 1;
   Object.keys(threads).forEach((phoneNumber) => {
     const contactName = threads[phoneNumber].from;
     const messages = threads[phoneNumber].messages;
 
+    let header = `${contactName} (${phoneNumber})`;
+    if (contactName === "(Unknown)") {
+      header = phoneNumber;
+    }
+
+    htmlContent += `<button class="collapsible-button" onclick="toggleCollapsible('content${id}')">${header}</button>`;
+    htmlContent += `<div class="collapsible-content" id="content${id}">`;
+    id++;
+
     // Create list item for each phone number
-    htmlContent += `<li><h3>${contactName} - ${phoneNumber}</h3>\n<ul>\n`;
+    htmlContent += `<ul>`;
 
     // Add messages for each phone number
+    let lastDay = "";
     messages.forEach((message) => {
+      if (lastDay !== message.day) {
+        htmlContent += `<h4>${message.day}</h4>`;
+        lastDay = message.day;
+      }
       const user = message.type === "sent" ? "Alain" : contactName;
-      htmlContent += `<li>[${message.date} || ${user}]: ${message.body}</li>\n`;
+      htmlContent += `<li>[${user} - ${message.time}]: ${message.body}</li>\n`;
     });
 
-    htmlContent += "</ul>\n</li>\n";
+    htmlContent += "</ul>";
+
+    htmlContent += `</div>`;
   });
 
   // Close HTML content
-  htmlContent += "</ul>\n</body>\n</html>";
+  htmlContent += `</ul>
+  <script>
+  // Function to toggle collapsible content
+  function toggleCollapsible(contentId) {
+    var content = document.getElementById(contentId);
+    // Toggle the display of the content
+    if (content.style.display === 'block') {
+      content.style.display = 'none';
+    } else {
+      content.style.display = 'block';
+    }
+  }
+  </script>
+  </body>
+  </html>`;
 
   // Write HTML content to file
   fs.writeFileSync(join("output", "index.html"), htmlContent, "utf-8");
